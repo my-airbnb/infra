@@ -1,0 +1,16 @@
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+*.tfvars
+terraform.tfvars
+.terraform.tfvars
+
+# Ansible
+*.retry
+ansible/roles/*/
+
+# OS
+.DS_Store
+*.log
