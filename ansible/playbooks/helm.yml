@@ -1,0 +1,19 @@
+---
+- name: Install Helm
+  hosts: k3s_node
+  become: true
+
+  tasks:
+    - name: Install Helm
+      shell: |
+        curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+      args:
+        creates: /usr/local/bin/helm
+
+    - name: Verify Helm installation
+      shell: helm version
+      register: helm_version
+
+    - name: Print Helm version
+      debug:
+        msg: "{{ helm_version.stdout }}"
