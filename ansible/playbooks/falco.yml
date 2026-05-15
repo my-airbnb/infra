@@ -1,0 +1,25 @@
+---
+- name: Install Falco
+  hosts: k3s_node
+  become: false
+  environment:
+    KUBECONFIG: /home/ubuntu/.kube/config
+
+  tasks:
+    - name: Add Falco Helm repo
+      shell: helm repo add falcosecurity https://falcosecurity.github.io/charts
+
+    - name: Update Helm repos
+      shell: helm repo update
+
+    - name: Install Falco
+      shell: |
+        helm upgrade --install falco falcosecurity/falco \
+          --namespace falco \
+          --create-namespace \
+          --set driver.kind=modern_ebpf \
+          --set falcosidekick.enabled=true \
+          --set falcosidekick.webui.enabled=true
+
+    - name: Wait for Falco to be ready
+      shell: kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=falco -n falco --timeout=120s

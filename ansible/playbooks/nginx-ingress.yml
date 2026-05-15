@@ -1,0 +1,29 @@
+---
+- name: Install Nginx Ingress Controller
+  hosts: k3s_node
+  become: false
+  environment:
+    KUBECONFIG: /home/ubuntu/.kube/config
+
+  tasks:
+    - name: Install Helm
+      become: true
+      shell: |
+        curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+      args:
+        creates: /usr/local/bin/helm
+
+    - name: Add ingress-nginx Helm repo
+      shell: helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+
+    - name: Update Helm repos
+      shell: helm repo update
+
+    - name: Install Nginx Ingress Controller
+      shell: |
+        helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+          --namespace ingress-nginx \
+          --create-namespace \
+          --set controller.service.type=NodePort \
+          --set controller.service.nodePorts.http=30080 \
+          --set controller.service.nodePorts.https=30443

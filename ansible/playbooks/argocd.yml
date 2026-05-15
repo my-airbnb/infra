@@ -1,0 +1,35 @@
+---
+- name: Install ArgoCD
+  hosts: k3s_node
+  become: false
+  environment:
+    KUBECONFIG: /home/ubuntu/.kube/config
+
+  tasks:
+    - name: Create argocd namespace
+      shell: kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+
+    - name: Install ArgoCD
+      shell: |
+        kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+    - name: Wait for ArgoCD pods to be ready
+      shell: kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=argocd-server -n argocd --timeout=120s
+
+    - name: Install ArgoCD CLI
+      become: true
+      shell: |
+        curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+        chmod +x /usr/local/bin/argocd
+
+    - name: Patch ArgoCD service to NodePort
+      shell: |
+        kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "NodePort"}}'
+
+    - name: Get ArgoCD initial admin password
+      shell: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+      register: argocd_password
+
+    - name: Print ArgoCD password
+      debug:
+        msg: "ArgoCD admin password: {{ argocd_password.stdout }}"
