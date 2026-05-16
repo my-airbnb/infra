@@ -37,4 +37,5 @@ variable "instance_type" {
 variable "key_pair_name" {
   description = "AWS key pair name for SSH"
   type        = string
+  default = "my-airbnb-key"
 }
