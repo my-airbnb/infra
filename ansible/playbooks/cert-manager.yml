@@ -1,0 +1,70 @@
+---
+- name: Install cert-manager
+  hosts: k3s_node
+  become: false
+  environment:
+    KUBECONFIG: /home/ubuntu/.kube/config
+
+  tasks:
+    - name: Add cert-manager Helm repo
+      shell: helm repo add jetstack https://charts.jetstack.io
+
+    - name: Update Helm repos
+      shell: helm repo update
+
+    - name: Install cert-manager
+      shell: |
+        helm upgrade --install cert-manager jetstack/cert-manager \
+          --namespace cert-manager \
+          --create-namespace \
+          --version v1.17.2 \
+          --set crds.enabled=true
+
+    - name: Wait for cert-manager to be ready
+      shell: kubectl wait --for=condition=ready pod -l app.kubernetes.io/instance=cert-manager -n cert-manager --timeout=120s
+
+    - name: Create Let's Encrypt ClusterIssuer (staging)
+      shell: |
+        kubectl apply -f - <<EOF
+        apiVersion: cert-manager.io/v1
+        kind: ClusterIssuer
+        metadata:
+          name: letsencrypt-staging
+        spec:
+          acme:
+            server: https://acme-staging-v02.api.letsencrypt.org/directory
+            email: oserghini090@gmail.com
+            privateKeySecretRef:
+              name: letsencrypt-staging
+            solvers:
+              - http01:
+                  ingress:
+                    ingressClassName: nginx
+        EOF
+
+    - name: Create Let's Encrypt ClusterIssuer (production)
+      shell: |
+        kubectl apply -f - <<EOF
+        apiVersion: cert-manager.io/v1
+        kind: ClusterIssuer
+        metadata:
+          name: letsencrypt-prod
+        spec:
+          acme:
+            server: https://acme-v02.api.letsencrypt.org/directory
+            email: oserghini090@gmail.com
+            privateKeySecretRef:
+              name: letsencrypt-prod
+            solvers:
+              - http01:
+                  ingress:
+                    ingressClassName: nginx
+        EOF
+
+    - name: Verify ClusterIssuers
+      shell: kubectl get clusterissuer
+      register: issuers
+
+    - name: Print ClusterIssuers
+      debug:
+        msg: "{{ issuers.stdout }}"

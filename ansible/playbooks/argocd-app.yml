@@ -1,0 +1,58 @@
+---
+- name: Bootstrap ArgoCD Application
+  hosts: k3s_node
+  become: false
+  environment:
+    KUBECONFIG: /home/ubuntu/.kube/config
+
+  tasks:
+    - name: Wait for ArgoCD server to be ready
+      shell: kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=argocd-server -n argocd --timeout=180s
+
+    - name: Get ArgoCD admin password
+      shell: |
+        kubectl -n argocd get secret argocd-initial-admin-secret \
+          -o jsonpath="{.data.password}" | base64 -d
+      register: argocd_password
+
+    - name: Login to ArgoCD
+      shell: |
+        argocd login localhost:$(kubectl get svc argocd-server -n argocd -o jsonpath='{.spec.ports[?(@.name=="https")].nodePort}') \
+          --username admin \
+          --password "{{ argocd_password.stdout }}" \
+          --insecure
+
+    - name: Create ArgoCD application for k8s-manifests
+      shell: |
+        kubectl apply -f - <<EOF
+        apiVersion: argoproj.io/v1alpha1
+        kind: Application
+        metadata:
+          name: my-airbnb
+          namespace: argocd
+        spec:
+          project: default
+          source:
+            repoURL: https://github.com/my-airbnb/k8s-manifests.git
+            targetRevision: infra
+            path: .
+            directory:
+              recurse: true
+          destination:
+            server: https://kubernetes.default.svc
+            namespace: airbnb
+          syncPolicy:
+            automated:
+              prune: true
+              selfHeal: true
+            syncOptions:
+              - CreateNamespace=true
+        EOF
+
+    - name: Verify ArgoCD application
+      shell: kubectl get application -n argocd
+      register: apps
+
+    - name: Print applications
+      debug:
+        msg: "{{ apps.stdout }}"

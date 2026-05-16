@@ -1,4 +1,4 @@
-.PHONY: k3s sealed-secrets argocd nginx-ingress falco all
+.PHONY: k3s sealed-secrets nginx-ingress cert-manager argocd argocd-app falco all
 
 k3s:
 	ansible-playbook -i inventory.yml playbooks/k3s.yml
@@ -6,11 +6,17 @@ k3s:
 sealed-secrets:
 	ansible-playbook -i inventory.yml playbooks/sealed-secrets.yml
 
+nginx-ingress:
+	ansible-playbook -i inventory.yml playbooks/nginx-ingress.yml
+
+cert-manager:
+	ansible-playbook -i inventory.yml playbooks/cert-manager.yml
+
 argocd:
 	ansible-playbook -i inventory.yml playbooks/argocd.yml
 
-nginx-ingress:
-	ansible-playbook -i inventory.yml playbooks/nginx-ingress.yml
+argocd-app:
+	ansible-playbook -i inventory.yml playbooks/argocd-app.yml
 
 falco:
 	ansible-playbook -i inventory.yml playbooks/falco.yml
@@ -18,6 +24,8 @@ falco:
 all:
 	$(MAKE) k3s
 	$(MAKE) sealed-secrets
-	$(MAKE) argocd
 	$(MAKE) nginx-ingress
+	$(MAKE) cert-manager
+	$(MAKE) argocd
+	$(MAKE) argocd-app
 	$(MAKE) falco
