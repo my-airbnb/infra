@@ -31,7 +31,7 @@ variable "public_subnet_cidr" {
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
-  default     = "t3.medium"
+  default     = "c5.2xlarge"
 }
 
 variable "key_pair_name" {
