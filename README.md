@@ -1,12 +1,22 @@
 # Airbnb Clone — Infrastructure (Terraform + Ansible)
 
-Infrastructure-as-Code that **provisions** and **bootstraps** the k3s cluster the
-[Airbnb-clone microservices platform](https://github.com/my-airbnb/k8s-manifests) runs on.
+## The problem
 
-Two stages:
+Standing up a production cluster by hand is slow, **impossible to reproduce exactly**, and drifts
+over time. Clicking through one cloud's console means **vendor lock-in** and no real
+disaster-recovery story — if the box dies, so does the undocumented setup in someone's head.
+How do you rebuild the entire platform, identically, **on any provider or bare metal**, from nothing?
 
-1. **Terraform** — provisions the cloud infrastructure (AWS).
-2. **Ansible** — turns the bare node into a fully configured GitOps cluster.
+## The approach — Infrastructure as Code
+
+Two declarative stages turn a bare server into a fully configured GitOps cluster — reproducibly and
+provider-agnostically, so the whole platform can be rebuilt from scratch with a handful of commands:
+
+1. **Terraform** — provisions the cloud footprint (AWS).
+2. **Ansible** — bootstraps the bare node into a GitOps-ready cluster.
+
+Application workloads then deploy themselves via ArgoCD from
+[`k8s-manifests`](https://github.com/my-airbnb/k8s-manifests).
 
 > **Note:** values in this public repo are redacted — `YOUR_SERVER_IP`, the tfstate bucket's
 > account id (`…-CHANGE_ME`), etc. Supply your own before running.
