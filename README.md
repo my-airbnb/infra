@@ -23,6 +23,23 @@ Application workloads then deploy themselves via ArgoCD from
 
 ---
 
+## Challenges I faced (and how I solved them)
+
+Bootstrapping a GitOps cluster on a bare cloud node surfaced problems you don't get on a managed
+control plane. Each of these is a real fix in the history:
+
+- **No cloud load balancer on bare k3s.** The default `nginx-ingress` `Service` type expected a
+  cloud LB that doesn't exist on a single self-managed node, so ingress never got an address. Set
+  the service to bind the host ports directly so traffic actually reaches the cluster.
+- **ArgoCD install failing on CRD ownership conflicts.** Re-applying the manifests collided with
+  existing field owners. Added `--force-conflicts` to the install so the bootstrap is idempotent and
+  re-runnable.
+- **`kubeseal` install breaking on "latest".** Tracking the latest release pulled in a version that
+  didn't match the in-cluster controller. Pinned a hardcoded, known-good version so sealing stays
+  reproducible across rebuilds.
+
+---
+
 ## 1. Terraform — `terraform/`
 
 Provisions the AWS footprint for a single-node k3s host:
